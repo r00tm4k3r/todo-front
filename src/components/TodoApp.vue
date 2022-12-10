@@ -4,56 +4,60 @@
     <h2 class="text-center mt-5">My Vue Todo App</h2>
 
     <!-- Input -->
-    <div class="d-flex mt-5">
+    <form class="d-flex mt-5" @submit.prevent="uploadTodo">
       <input
         type="text"
-        v-model="task"
-        placeholder="Enter task"
+        v-model="title"
+        placeholder="Enter title"
         class="w-100 form-control"
       />
-      <button class="btn btn-warning rounded-0" @click="submitTask">
+      <input
+        type="text"
+        v-model="description"
+        placeholder="Enter description"
+        class="w-100 form-control"
+      />
+      <button class="btn btn-warning rounded-0" type="submit">
         SUBMIT
       </button>
-    </div>
+    </form>
 
     <!-- Task table -->
     <table class="table table-bordered mt-5">
       <thead>
         <tr>
           <th scope="col">Task</th>
+          <th scope="col">Description</th>
           <th scope="col" style="width: 120px">Status</th>
-          <th scope="col" class="text-center">#</th>
-          <th scope="col" class="text-center">#</th>
+          <th scope="col" class="text-center">Delete</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(task, index) in tasks" :key="index">
+        <tr v-for="task in allTodos" v-bind:key="task._id">
           <td>
-            <span :class="{ 'line-through': task.status === 'finished' }">
-              {{ task.name }}
+            <span :class="{ 'line-through': task.done == true }">
+              {{ task.title }}
             </span>
           </td>
           <td>
-            <span
+            <span :class="{ 'line-through': task.done == true }">
+              {{ task.description }}
+            </span>
+          </td>
+          <td>
+            <span @click="changeStatus(task)"
               class="pointer noselect"
-              @click="changeStatus(index)"
               :class="{
-                'text-danger': task.status === 'to-do',
-                'text-success': task.status === 'finished',
-                'text-warning': task.status === 'in-progress',
+                'text-danger': task.done == false,
+                'text-success line-through': task.done == true,
               }"
             >
-              {{ capitalizeFirstChar(task.status) }}
+            {{getStatusName(task.done)}}
             </span>
           </td>
           <td class="text-center">
-            <div @click="deleteTask(index)">
+            <div @click="deleteTask(task)">
               <span class="fa fa-trash pointer"></span>
-            </div>
-          </td>
-          <td class="text-center">
-            <div @click="editTask(index)">
-              <p class="fa fa-pen pointer"></p>
             </div>
           </td>
         </tr>
@@ -63,90 +67,35 @@
 </template>
 
 <script>
-export default {
-  name: "HelloWorld",
-  props: {
-    msg: String,
-  },
-
-  data() {
-    return {
-      task: "",
-      editedTask: null,
-      statuses: ["to-do", "in-progress", "finished"],
-
-      /* Status could be: 'to-do' / 'in-progress' / 'finished' */
-      tasks: [
-        {
-          name: "Steal bananas from the supermarket.",
-          status: "to-do",
-        },
-        {
-          name: "Eat 1 kg chocolate in 1 hour.",
-          status: "in-progress",
-        },
-        {
-          name: "Create YouTube video.",
-          status: "finished",
-        },
-      ],
-    };
-  },
-
-  methods: {
-    /**
-     * Capitalize first character
-     */
-    capitalizeFirstChar(str) {
-      return str.charAt(0).toUpperCase() + str.slice(1);
-    },
-
-    /**
-     * Change status of task by index
-     */
-    changeStatus(index) {
-      let newIndex = this.statuses.indexOf(this.tasks[index].status);
-      if (++newIndex > 2) newIndex = 0;
-      this.tasks[index].status = this.statuses[newIndex];
-    },
-
-    /**
-     * Deletes task by index
-     */
-    deleteTask(index) {
-      this.tasks.splice(index, 1);
-    },
-
-    /**
-     * Edit task
-     */
-    editTask(index) {
-      this.task = this.tasks[index].name;
-      this.editedTask = index;
-    },
-
-    /**
-     * Add / Update task
-     */
-    submitTask() {
-      if (this.task.length === 0) return;
-
-      /* We need to update the task */
-      if (this.editedTask != null) {
-        this.tasks[this.editedTask].name = this.task;
-        this.editedTask = null;
-      } else {
-        /* We need to add new task */
-        this.tasks.push({
-          name: this.task,
-          status: "todo",
-        });
+  import { mapActions, mapGetters } from 'vuex'
+  export default {
+    data: () => {
+      return{
+        title: '',
+        description: '',
+        status: false
       }
-
-      this.task = "";
     },
-  },
-};
+    name: "HelloWorld",
+
+    computed: mapGetters(['allTodos']),
+
+    methods: {
+      ...mapActions(['getTodos', 'changeStatus', 'deleteTask', 'uploadTask']),
+
+      uploadTodo() {
+        this.$store.dispatch('uploadTask', {
+          title : this.title,
+          description : this.description,
+        })
+      },
+
+      getStatusName(status) {
+        return (status ? 'Done' : 'In progress')
+      }
+    },
+    created() {this.getTodos()}
+  };
 </script>
 
 <style scoped>
